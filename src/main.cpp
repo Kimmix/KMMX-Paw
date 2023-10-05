@@ -1,16 +1,15 @@
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
+#include "Adafruit_MPR121.h"
 
 uint8_t broadcastAddress[] = {0x40, 0x22, 0xD8, 0x4C, 0xAB, 0x98};
 static const char* PMK_KEY_STR = "NHkeBaL5YkoAUsi6";
 static const char* LMK_KEY_STR = "eYF8CUjnkFq3Ke5f";
 
 typedef struct struct_message {
-    char a[32];
+    uint16_t debugLed;
     int b;
-    float c;
-    bool d;
 } struct_message;
 struct_message myData;
 
@@ -52,18 +51,34 @@ void setupEspNow() {
 
     esp_now_register_send_cb(OnDataSent);
 }
-
-void setup() {
-    Serial.begin(115200);
-    setupEspNow();
+// ------------------------------- MPR121
+Adafruit_MPR121 cap = Adafruit_MPR121();
+uint16_t currtouched = 0;
+int state = 0, prevState = 0;
+void setupMPR121() {
+    if (!cap.begin(0x5A)) {
+        Serial.println("Couldnt LIS3DH");
+        while (1)
+            ;
+    }
+    Serial.println("MPR121 found!");
 }
 
-void loop() {
-    // Set values to send
-    strcpy(myData.a, "THIS IS A CHAR");
-    myData.b = random(1, 20);
-    myData.c = 1.2;
-    myData.d = false;
+void scanMPR() {
+    currtouched = cap.touched();
+    switch (currtouched) {
+        case 0b00000001:
+            state = 1;
+            break;
+        default:
+            state = 0;
+            break;
+    }
+}
+
+void sendEspnow() {
+    myData.b = state;
+    myData.debugLed = 0;
 
     // Send message via ESP-NOW
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&myData, sizeof(myData));
@@ -73,5 +88,19 @@ void loop() {
     } else {
         Serial.println("Error sending the data");
     }
-    delay(2000);
+}
+
+void setup() {
+    Serial.begin(115200);
+    setupEspNow();
+    setupMPR121();
+}
+
+void loop() {
+    scanMPR();
+    if (state != prevState) {
+        Serial.println(state);
+        sendEspnow();
+        prevState = state;
+    }
 }
