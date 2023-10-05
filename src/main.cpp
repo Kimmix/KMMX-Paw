@@ -2,33 +2,27 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t broadcastAddress[] = {0x40, 0x22, 0xD8, 0x4C, 0xAB, 0x98};
+static const char* PMK_KEY_STR = "NHkeBaL5YkoAUsi6";
+static const char* LMK_KEY_STR = "eYF8CUjnkFq3Ke5f";
 
-// Structure example to send data
-// Must match the receiver structure
 typedef struct struct_message {
     char a[32];
     int b;
     float c;
     bool d;
 } struct_message;
-
-// Create a struct_message called myData
 struct_message myData;
 
 esp_now_peer_info_t peerInfo;
 
 // callback when data is sent
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
     Serial.print("\r\nLast Packet Send Status:\t");
     Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
-void setup() {
-    // Init Serial Monitor
-    Serial.begin(115200);
-
+void setupEspNow() {
     // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
 
@@ -38,20 +32,30 @@ void setup() {
         return;
     }
 
-    // Once ESPNow is successfully Init, we will register for Send CB to
-    // get the status of Trasnmitted packet
-    esp_now_register_send_cb(OnDataSent);
+    // Set PMK key
+    esp_now_set_pmk((uint8_t*)PMK_KEY_STR);
 
     // Register peer
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
     peerInfo.channel = 0;
-    peerInfo.encrypt = false;
+    peerInfo.encrypt = true;
+    // Set the receiver device LMK key
+    for (uint8_t i = 0; i < 16; i++) {
+        peerInfo.lmk[i] = LMK_KEY_STR[i];
+    }
 
     // Add peer
     if (esp_now_add_peer(&peerInfo) != ESP_OK) {
         Serial.println("Failed to add peer");
         return;
     }
+
+    esp_now_register_send_cb(OnDataSent);
+}
+
+void setup() {
+    Serial.begin(115200);
+    setupEspNow();
 }
 
 void loop() {
@@ -62,7 +66,7 @@ void loop() {
     myData.d = false;
 
     // Send message via ESP-NOW
-    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&myData, sizeof(myData));
+    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&myData, sizeof(myData));
 
     if (result == ESP_OK) {
         Serial.println("Sent with success");
