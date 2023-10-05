@@ -70,6 +70,21 @@ void scanMPR() {
         case 0b00000001:
             state = 1;
             break;
+        case 0b00000010:
+            state = 2;
+            break;
+        case 0b00000100:
+            state = 3;
+            break;
+        case 0b00001000:
+            state = 4;
+            break;
+        case 0b00010000:
+            state = 5;
+            break;
+        case 0b00100000:
+            state = 6;
+            break;
         default:
             state = 0;
             break;
