@@ -13,7 +13,7 @@ void setupMotor() {
 }
 unsigned long currentMillis;
 unsigned long previousMillis;
-unsigned long duration = 150;
+unsigned long duration = 200;
 
 void motorVibrate() {
     digitalWrite(motorPin, HIGH);  // Turn on the LED when data is sent successfully
@@ -79,7 +79,8 @@ void setupEspNow() {
 // ------------------------------- MPR121
 Adafruit_MPR121 cap = Adafruit_MPR121();
 uint16_t currtouched = 0;
-int state = 0, prevState = 0;
+uint16_t prevState = 0;
+int state = 0;
 void setupMPR121() {
     if (!cap.begin(0x5A)) {
         Serial.println("Couldnt LIS3DH");
@@ -118,7 +119,7 @@ void scanMPR() {
 
 void sendEspnow() {
     myData.b = state;
-    myData.debugLed = 0;
+    myData.debugLed = currtouched;
 
     // Send message via ESP-NOW
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t*)&myData, sizeof(myData));
@@ -142,10 +143,10 @@ void setup() {
 }
 void loop() {
     scanMPR();
-    if (state != prevState) {
-        Serial.println(state);
+    if (currtouched != prevState) {
+        Serial.println(currtouched, BIN);
         sendEspnow();
-        prevState = state;
+        prevState = currtouched;
     }
     turnOffMotor();
 }
