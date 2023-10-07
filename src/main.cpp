@@ -3,6 +3,31 @@
 #include <WiFi.h>
 #include "Adafruit_MPR121.h"
 
+const int motorPin = GPIO_NUM_14;
+const int ledPin = GPIO_NUM_2;
+void setupMotor() {
+    pinMode(motorPin, OUTPUT);
+    pinMode(ledPin, OUTPUT);
+    digitalWrite(motorPin, LOW);  // Initially turn off the LED
+    digitalWrite(ledPin, LOW);    // Initially turn off the LED
+}
+unsigned long currentMillis;
+unsigned long previousMillis;
+unsigned long duration = 150;
+
+void motorVibrate() {
+    digitalWrite(motorPin, HIGH);  // Turn on the LED when data is sent successfully
+    digitalWrite(ledPin, HIGH);    // Turn on the LED when data is sent successfully
+    previousMillis = millis();     // Store the current time
+}
+
+void turnOffMotor() {
+    if (millis() - previousMillis >= duration) {
+        digitalWrite(motorPin, LOW);  // Turn on the LED when data is sent successfully
+        digitalWrite(ledPin, LOW);    // Turn off the LED
+    }
+}
+
 uint8_t broadcastAddress[] = {0x40, 0x22, 0xD8, 0x4C, 0xAB, 0x98};
 static const char* PMK_KEY_STR = "NHkeBaL5YkoAUsi6";
 static const char* LMK_KEY_STR = "eYF8CUjnkFq3Ke5f";
@@ -67,22 +92,22 @@ void setupMPR121() {
 void scanMPR() {
     currtouched = cap.touched();
     switch (currtouched) {
-        case 0b00000001:
+        case 1 << 0:
             state = 1;
             break;
-        case 0b00000010:
+        case 1 << 1:
             state = 2;
             break;
-        case 0b00000100:
+        case 1 << 2:
             state = 3;
             break;
-        case 0b00001000:
+        case 1 << 3:
             state = 4;
             break;
-        case 0b00010000:
+        case 1 << 4:
             state = 5;
             break;
-        case 0b00100000:
+        case 1 << 5:
             state = 6;
             break;
         default:
@@ -103,14 +128,18 @@ void sendEspnow() {
     } else {
         Serial.println("Error sending the data");
     }
+
+    if (result == ESP_OK && state != 0) {
+        motorVibrate();
+    }
 }
 
 void setup() {
     Serial.begin(115200);
     setupEspNow();
     setupMPR121();
+    setupMotor();
 }
-
 void loop() {
     scanMPR();
     if (state != prevState) {
@@ -118,4 +147,5 @@ void loop() {
         sendEspnow();
         prevState = state;
     }
+    turnOffMotor();
 }
