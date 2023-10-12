@@ -3,28 +3,26 @@
 #include <WiFi.h>
 #include "Adafruit_MPR121.h"
 
-const int motorPin = GPIO_NUM_14;
-const int ledPin = GPIO_NUM_2;
+const int hapticChannel = 0;
+const int motorPin = GPIO_NUM_0;
+// const int ledPin = LED_BUILTIN;
 void setupMotor() {
-    pinMode(motorPin, OUTPUT);
-    pinMode(ledPin, OUTPUT);
-    digitalWrite(motorPin, LOW);  // Initially turn off the LED
-    digitalWrite(ledPin, LOW);    // Initially turn off the LED
+    ledcSetup(hapticChannel, 5000, 8);
+    // ledcAttachPin(ledPin, hapticChannel);
+    ledcAttachPin(motorPin, hapticChannel);
 }
 unsigned long currentMillis;
 unsigned long previousMillis;
-unsigned long duration = 200;
+unsigned long duration = 70;
 
 void motorVibrate() {
-    digitalWrite(motorPin, HIGH);  // Turn on the LED when data is sent successfully
-    digitalWrite(ledPin, HIGH);    // Turn on the LED when data is sent successfully
-    previousMillis = millis();     // Store the current time
+    ledcWrite(hapticChannel, 255);
+    previousMillis = millis();  // Store the current time
 }
 
 void turnOffMotor() {
     if (millis() - previousMillis >= duration) {
-        digitalWrite(motorPin, LOW);  // Turn on the LED when data is sent successfully
-        digitalWrite(ledPin, LOW);    // Turn off the LED
+        ledcWrite(hapticChannel, 0);
     }
 }
 
@@ -83,7 +81,7 @@ uint16_t prevState = 0;
 int state = 0;
 void setupMPR121() {
     if (!cap.begin(0x5A)) {
-        Serial.println("Couldnt LIS3DH");
+        Serial.println("Couldn't setup MPR121");
         while (1)
             ;
     }
@@ -137,9 +135,10 @@ void sendEspnow() {
 
 void setup() {
     Serial.begin(115200);
-    setupEspNow();
-    setupMPR121();
+    while (!Serial) delay(500);
     setupMotor();
+    setupMPR121();
+    setupEspNow();
 }
 void loop() {
     scanMPR();
