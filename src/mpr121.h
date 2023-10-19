@@ -6,8 +6,6 @@ int state = 0;
 void setupMPR121() {
     if (!cap.begin(0x5A)) {
         Serial.println("Couldn't setup MPR121");
-        while (1)
-            ;
     }
     Serial.println("MPR121 found!");
 }
