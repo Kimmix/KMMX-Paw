@@ -1,6 +1,7 @@
 #include "Haptic_DRV2605.h"
 Haptic_DRV2605 haptic;
-const int effectNo = 3;
+const int startupEffectNo = 52;
+const int effectNo = 14;
 void setupMotor() {
     // initialize the Haptic controller
     if (haptic.begin() != HAPTIC_SUCCESS) {
@@ -12,9 +13,9 @@ void setupMotor() {
         haptic.setActuatorType(LRA);    // pick an actuator type
         haptic.setMode(REGISTER_MODE);  // haptic effects triggered by I2C register write
     }
-    haptic.setWaveform(0, effectNo);  // set the first sequence
-    // haptic.setWaveform(1, effectNo);  // end the sequence
+    haptic.setWaveform(0, startupEffectNo);  // set the first sequence
     haptic.goWait();                  // play the waveform
+    haptic.setWaveform(0, effectNo);  // set the first sequence
 }
 
 void motorVibrate() {
