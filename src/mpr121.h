@@ -4,7 +4,7 @@ uint16_t currtouched = 0;
 uint16_t prevState = 0;
 int state = 0;
 void setupMPR121() {
-    if (!cap.begin(0x5A)) {
+    if (!cap.begin(0x5C)) {
         Serial.println("Couldn't setup MPR121");
     }
     Serial.println("MPR121 found!");
